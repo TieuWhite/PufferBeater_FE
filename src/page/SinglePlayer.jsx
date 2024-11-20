@@ -3,19 +3,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 // Get me from BE
-
-let wordsList = [];
-
-const fetchData = async () => {
-  try {
-    const data = await fetch("http://localhost:5000/random-words");
-    wordsList = data.words;
-    console.log(wordsList);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 export default function SinglePlayer() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -27,6 +14,16 @@ export default function SinglePlayer() {
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
+  const fetchData = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/random-words");
+      const selectedWords = await response.json();
+      setWord(selectedWords.word);
+    } catch (error) {
+      console.log("Error fetching data:", error);
+    }
+  };
+
   const getTimerDuration = () => {
     if (difficulty === "easy") return 7;
     if (difficulty === "medium") return 5;
@@ -34,7 +31,6 @@ export default function SinglePlayer() {
   };
 
   const startNewWord = () => {
-    setWord(wordsList[Math.floor(Math.random() * wordsList.length)]);
     setUserInput("");
     setTimeLeft(getTimerDuration());
     setGameOver(false);
