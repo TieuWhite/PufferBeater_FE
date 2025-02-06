@@ -34,8 +34,9 @@ export default function LoadingPage() {
     });
 
     socket.on("full", () => {
-      alert("the rooms is full");
+      alert("the room is full");
       navigate(`/`);
+      closeWebSocket();
     });
 
     return () => {

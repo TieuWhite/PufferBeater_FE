@@ -14,7 +14,7 @@ const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_URL;
 
 export default function LeaderBoardPage() {
   const [results, setResults] = useState([]);
-  const [sortOrder, setSortOrder] = useState("newest");
+  const [sortOrder, setSortOrder] = useState("highest");
   const [currentPage, setCurrentPage] = useState(1);
   const resultsPerPage = 10;
 
@@ -26,7 +26,7 @@ export default function LeaderBoardPage() {
           throw new Error("Failed to fetch results from the server");
         }
         const data = await response.json();
-        setResults(data); // Update the state with results
+        setResults(data);
       } catch (error) {
         console.error("Failed to fetch results:", error);
       }
@@ -36,10 +36,12 @@ export default function LeaderBoardPage() {
   }, []);
 
   const sortedResults = [...results].sort((a, b) => {
-    if (sortOrder === "newest") {
-      return new Date(b.createdAt) - new Date(a.createdAt); // Newest first
-    } else {
-      return new Date(a.createdAt) - new Date(b.createdAt); // Oldest first
+    if (sortOrder === "Latest") {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    } else if (sortOrder === "highest") {
+      const maxScoreA = Math.max(a.player1Score, a.player2Score);
+      const maxScoreB = Math.max(b.player1Score, b.player2Score);
+      return maxScoreB - maxScoreA;
     }
   });
 
@@ -100,8 +102,8 @@ export default function LeaderBoardPage() {
                     size="small"
                     displayEmpty
                   >
-                    <MenuItem value="newest">Newest</MenuItem>
-                    <MenuItem value="oldest">Oldest</MenuItem>
+                    <MenuItem value="latest">Latest</MenuItem>
+                    <MenuItem value="highest">Highest</MenuItem>
                   </Select>
                 </TableCell>
               </TableRow>

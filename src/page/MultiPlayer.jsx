@@ -2,7 +2,6 @@ import { Button, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { closeWebSocket, getWebSocket } from "../socket";
-const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_URL;
 
 export default function MultiPlayer() {
   const [playerNumber, setPlayerNumber] = useState(null);
@@ -14,53 +13,66 @@ export default function MultiPlayer() {
   const [score, setScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [replayCount, setReplayCount] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const socket = getWebSocket();
 
   const navigate = useNavigate();
 
-  const fetchWord = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/words/random`);
-      const data = await response.json();
-      if (data && data.length > 0) {
-        const words = data.map((item) => item.word);
-        setWordList(words);
-        setCurrentWord(words[0]);
-      }
-      setUserInput("");
-      setGameOver(false);
-    } catch (error) {
-      console.error("Error fetching word:", error);
-    }
-  };
-
-  useEffect(() => {
-    const socket = getWebSocket();
-    setPlayerNumber(socket.playerNumber);
-    console.log(playerNumber);
-
-    fetchWord();
-    setGameOver(false);
-  }, []);
-
   const handleInputChange = (event) => {
-    setUserInput(event.target.value);
+    const inputValue = event.target.value;
+    setUserInput(inputValue);
 
-    if (event.target.value === currentWord) {
+    if (inputValue === currentWord.word) {
       setScore((prevScore) => {
         const newScore = prevScore + 1;
 
-        const socket = getWebSocket();
-        socket.emit("scoreUpdate", { playerNumber, score: newScore });
-
+        socket.emit("scoreUpdate", {
+          playerNumber: playerNumber,
+          score: newScore,
+        });
         return newScore;
       });
 
-      fetchWord();
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = prevIndex + 1;
+
+        if (nextIndex < wordList.length) {
+          setCurrentWord(wordList[nextIndex]);
+        }
+
+        return nextIndex;
+      });
+      setUserInput("");
     }
   };
 
+  const renderWordWithHighlight = () => {
+    const word = wordList[currentIndex]?.word || "";
+    const splitWord = word.split("");
+    const splitInput = userInput.split("");
+
+    return splitWord.map((char, index) => {
+      const isCorrect = splitInput[index] === char;
+      const hasTyped = index < splitInput.length;
+      return (
+        <span
+          key={index}
+          style={{
+            color: !hasTyped ? "black" : isCorrect ? "green" : "red",
+            fontWeight: "bold",
+          }}
+        >
+          {char}
+        </span>
+      );
+    });
+  };
+
   useEffect(() => {
-    const socket = getWebSocket();
+    socket.on("wordList", (words) => {
+      setWordList(words);
+      setCurrentWord(words[0]);
+    });
 
     socket.on("scoreUpdate", (data) => {
       if (data.playerNumber === playerNumber) {
@@ -78,11 +90,17 @@ export default function MultiPlayer() {
       setScore(0);
       setOpponentScore(0);
       setReplayCount(0);
-      fetchWord();
+      setCurrentIndex(0);
+      setCurrentWord(wordList[0]?.word || "");
+      setUserInput("");
+      setGameOver(false);
+
+      socket.emit("wordList");
     });
 
     socket.on("playerLeave", () => {
       alert("Your opponent has left the game.");
+      socket.emit("playerLeave");
       closeWebSocket();
       navigate("/");
     });
@@ -102,20 +120,25 @@ export default function MultiPlayer() {
       }
     });
 
-    // Clean up listeners on unmount
     return () => {
-      socket.off("playerAssigned");
       socket.off("scoreUpdate");
       socket.off("replayStatus");
       socket.off("gameRestart");
       socket.off("playerLeave");
       socket.off("timeUpdate");
       socket.off("gameOver");
+      socket.off("wordList");
     };
   }, [playerNumber]);
 
+  useEffect(() => {
+    setPlayerNumber(socket.playerNumber);
+    setGameOver(false);
+
+    socket.emit("wordList");
+  }, []);
+
   const handleLeave = () => {
-    const socket = getWebSocket();
     if (socket) {
       socket.emit("playerLeave");
       closeWebSocket();
@@ -124,7 +147,6 @@ export default function MultiPlayer() {
   };
 
   const handleReplayRequest = () => {
-    const socket = getWebSocket();
     if (socket) {
       socket.emit("playerReplay");
     }
@@ -143,7 +165,7 @@ export default function MultiPlayer() {
       <h1
         style={{ fontSize: "4rem", marginBottom: "20px", userSelect: "none" }}
       >
-        {currentWord}
+        {renderWordWithHighlight()}
       </h1>
       <TextField
         label="Start typing..."

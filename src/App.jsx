@@ -10,6 +10,7 @@ import RegisterPage from "./page/RegisterPage";
 import LoginPage from "./page/LoginPage";
 import LeaderboardPage from "./page/LeaderboardPage";
 import HistoryPage from "./page/HistoryPage";
+import ErrorPage from "./page/ErrorPage";
 
 function App() {
   return (
@@ -25,6 +26,8 @@ function App() {
         <Route path="/singleplayer" element={<SinglePlayer />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route path="/multiplayer" element={<MultiPlayer />} />
+
+        <Route path="*" element={<ErrorPage />}></Route>
       </Routes>
     </>
   );

@@ -1,6 +1,7 @@
 import { Button, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_URL;
 
 export default function SinglePlayer() {
@@ -9,21 +10,20 @@ export default function SinglePlayer() {
   const difficulty = queryParams.get("difficulty");
   const navigate = useNavigate();
 
-  const [word, setWord] = useState("");
+  const [wordList, setWordList] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [userInput, setUserInput] = useState("");
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
-  const fetchData = async () => {
+  const fetchWords = async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/words/random`);
-      const randomWords = await response.json();
-      const selectedWord =
-        randomWords[Math.floor(Math.random() * randomWords.length)];
-      setWord(selectedWord.word);
+      const data = await response.json();
+      setWordList(data);
     } catch (error) {
-      console.log("Error fetching data:", error);
+      console.error("Error fetching words:", error);
     }
   };
 
@@ -31,8 +31,7 @@ export default function SinglePlayer() {
     return difficulty === "easy" ? 7 : difficulty === "medium" ? 5 : 3;
   };
 
-  const startNewWord = async () => {
-    await fetchData();
+  const startNewWord = () => {
     setUserInput("");
     setTimeLeft(getTimerDuration());
     setGameOver(false);
@@ -42,8 +41,9 @@ export default function SinglePlayer() {
     const inputValue = event.target.value;
     setUserInput(inputValue);
 
-    if (inputValue === word) {
+    if (inputValue === wordList[currentIndex]?.word) {
       setScore((prevScore) => prevScore + 1);
+      setCurrentIndex((prevIndex) => prevIndex + 1);
       startNewWord();
     }
   };
@@ -51,6 +51,10 @@ export default function SinglePlayer() {
   const handleLeave = () => {
     navigate("/");
   };
+
+  useEffect(() => {
+    fetchWords();
+  }, []);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -65,8 +69,32 @@ export default function SinglePlayer() {
   }, [timeLeft]);
 
   useEffect(() => {
-    startNewWord();
-  }, []);
+    if (wordList.length > 0) {
+      startNewWord();
+    }
+  }, [wordList]);
+
+  const renderWordWithHighlight = () => {
+    const word = wordList[currentIndex]?.word || "";
+    const splitWord = word.split("");
+    const splitInput = userInput.split("");
+
+    return splitWord.map((char, index) => {
+      const isCorrect = splitInput[index] === char;
+      const hasTyped = index < splitInput.length;
+      return (
+        <span
+          key={index}
+          style={{
+            color: !hasTyped ? "black" : isCorrect ? "green" : "red",
+            fontWeight: "bold",
+          }}
+        >
+          {char}
+        </span>
+      );
+    });
+  };
 
   return (
     <>
@@ -82,13 +110,15 @@ export default function SinglePlayer() {
           {difficulty === "easy" ? 7 : difficulty === "medium" ? 5 : "3"}
           seconds
         </h3>
-        <h1 style={{ fontSize: "4rem" }}>{word}</h1>{" "}
+        <h1 style={{ fontSize: "4rem" }}>
+          {wordList.length > 0 ? renderWordWithHighlight() : "HMPHHHHHHHH..."}
+        </h1>
         <TextField
           label="Start typing..."
           variant="outlined"
           value={userInput}
           onChange={handleInputChange}
-          disabled={gameOver}
+          disabled={gameOver || wordList.length === 0}
         />
         <div style={{ display: "flex" }}>
           <h2 id="time" style={{ margin: "20px 40px" }}>
