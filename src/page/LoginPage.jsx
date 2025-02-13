@@ -1,6 +1,6 @@
 import { Button, TextField } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as Yup from "yup";
 import { useAuth } from "../contexts/AuthContext";
 const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_URL;
@@ -123,7 +123,7 @@ export default function LoginPage() {
             Login
           </Button>
           <h4>
-            Don't have an account? <a href="/register">Create one here</a>.
+            Don't have an account? <Link to="/register">Create one here</Link>.
           </h4>
         </form>
       </div>
