@@ -1,6 +1,6 @@
 import { Button, TextField } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as Yup from "yup";
 const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_URL;
 
@@ -122,7 +122,7 @@ export default function RegisterPage() {
             Register
           </Button>
           <h4>
-            Already have an account? <a href="/login">Sign in here</a>.
+            Already have an account? <Link to="/login">Sign in here</Link>.
           </h4>
         </form>
       </div>
